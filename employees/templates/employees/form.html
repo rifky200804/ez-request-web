@@ -1,0 +1,98 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- User Details Section -->
+                    <h5 class="mb-3 text-secondary border-bottom pb-2">User Account</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Username</label>
+                            {{ form.username }}
+                            <div class="text-danger small">{{ form.username.errors }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            {{ form.email }}
+                            <div class="text-danger small">{{ form.email.errors }}</div>
+                        </div>
+                    </div>
+                    {% if form.password %}
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        {{ form.password }}
+                        <div class="text-danger small">{{ form.password.errors }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+
+                    <!-- Employee Details Section -->
+                    <h5 class="mb-3 mt-4 text-secondary border-bottom pb-2">Employee Details</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Position</label>
+                            {{ form.position }}
+                            <div class="text-danger small">{{ form.position.errors }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            {{ form.department }}
+                            <div class="text-danger small">{{ form.department.errors }}</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        {{ form.role }}
+                        <div class="text-danger small">{{ form.role.errors }}</div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            {{ form.phone }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date Hired</label>
+                            {{ form.date_hired }}
+                            <div class="text-danger small">{{ form.date_hired.errors }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden fields for update usage if any, though specialized View usually handles it -->
+                    {% for hidden in form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="javascript:history.back()" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">Save Employee</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

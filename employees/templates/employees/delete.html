@@ -1,0 +1,19 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">Delete Employee Profile</div>
+            <div class="card-body">
+                <p>Are you sure you want to delete the profile for "<strong>{{ employee.user.username }}</strong>"?</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <a href="{% url 'employees:list' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

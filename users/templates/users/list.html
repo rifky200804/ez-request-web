@@ -1,0 +1,47 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<h2>User Management</h2>
+<div class="mb-3">
+    <a href="#" 
+       data-bs-toggle="modal" 
+       data-remote-url="{% url 'users:create' %}" 
+       data-modal-title="Add New User"
+       class="btn btn-primary">Add New User</a>
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.username }}</td>
+            <td>{{ u.email }}</td>
+            <td>{% if u.is_active %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-danger">No</span>{% endif %}</td>
+            <td>
+                <a href="#" 
+                   data-bs-toggle="modal" 
+                   data-remote-url="{% url 'users:update' u.pk %}" 
+                   data-modal-title="Edit User"
+                   class="btn btn-sm btn-warning">Edit</a>
+                <a href="#" 
+                   data-bs-toggle="modal" 
+                   data-remote-url="{% url 'users:delete' u.pk %}" 
+                   data-modal-title="Delete User"
+                   class="btn btn-sm btn-danger">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+{% include 'users/pagination.html' with page_obj=users %}
+{% endblock %}
+

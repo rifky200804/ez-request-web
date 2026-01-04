@@ -1,0 +1,229 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<h2 class="fw-bold mb-4">Request Approvals</h2>
+
+<ul class="nav nav-tabs mb-3" id="approvalTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if not request.GET.page_history %}active{% endif %}" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">Pending Approvals</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link {% if request.GET.page_history %}active{% endif %}" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">History</button>
+    </li>
+</ul>
+
+
+<div class="tab-content" id="approvalTabsContent">
+    <!-- PENDING TAB -->
+    <div class="tab-pane fade {% if not request.GET.page_history %}show active{% endif %}" id="pending" role="tabpanel">
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Requester</th>
+                                <th>Type</th>
+                                <th>Title</th>
+                                <th>Your Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in approval_list %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ req.employee.user.get_full_name|default:req.employee.user.username }}</div>
+                                    <small class="text-muted">{{ req.employee.position }}</small>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ req.get_request_type_display }}</span></td>
+                                <td>
+                                    <div class="fw-bold">{{ req.title }}</div>
+                                    <small class="text-muted">{{ req.description|truncatechars:30 }}</small>
+                                    {% if req.attachment %}
+                                    <br><a href="{{ req.attachment.url }}" target="_blank" class="small"><i class="bi bi-paperclip"></i> File</a>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.employee.role == 'MANAGER' %}
+                                        <span class="badge bg-warning text-dark">Manager Review</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Director Review</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-success" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#confirmModal" 
+                                            data-action="approve" 
+                                            data-url="{% url 'service_requests:approve' req.pk %}"
+                                            data-title="{{ req.title }}">
+                                        <i class="bi bi-check-lg"></i> Approve
+                                    </button>
+                                    
+                                    <button type="button" 
+                                            class="btn btn-sm btn-danger ms-1" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#confirmModal" 
+                                            data-action="reject" 
+                                            data-url="{% url 'service_requests:approve' req.pk %}"
+                                            data-title="{{ req.title }}">
+                                        <i class="bi bi-x-lg"></i> Reject
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No pending approvals found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% include 'users/pagination.html' with page_obj=approval_list param_name='page_pending' %}
+    </div>
+
+
+    <!-- HISTORY TAB -->
+    <div class="tab-pane fade {% if request.GET.page_history %}show active{% endif %}" id="history" role="tabpanel">
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Requester</th>
+                                <th>Type</th>
+                                <th>Title</th>
+                                <th>Your Decision</th>
+                                <th>Final Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in history_list %}
+                            <tr>
+                                <td>{{ req.employee.user.username }}</td>
+                                <td>{{ req.get_request_type_display }}</td>
+                                <td>{{ req.title }}</td>
+                                <td>
+                                    {% if user.employee.role == 'MANAGER' %}
+                                        {% if req.manager_status == 'APPROVED' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if req.director_status == 'APPROVED' %}
+                                            <span class="badge bg-success">Approved</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if req.status == 'APPROVED' %}
+                                        <span class="badge bg-success">Request Approved</span>
+                                    {% elif req.status == 'REJECTED' %}
+                                        <span class="badge bg-danger">Request Rejected</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Processing</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No approval history found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% include 'users/pagination.html' with page_obj=history_list param_name='page_history' %}
+    </div>
+
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage">Are you sure you want to proceed?</p>
+                <div class="alert alert-light border" id="requestTitleDisplay"></div>
+                <div class="mb-3">
+                    <label for="feedbackInput" class="form-label">Feedback / Reason (Optional)</label>
+                    <textarea class="form-control" name="feedback" id="feedbackInput" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="modalForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" id="modalActionInput">
+                    <!-- Feedback input will be moved here by JS or cloned -->
+                    <textarea name="feedback" class="d-none" id="hiddenFeedback"></textarea>
+                    <button type="submit" class="btn" id="modalConfirmBtn">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const confirmModal = document.getElementById('confirmModal')
+    confirmModal.addEventListener('show.bs.modal', function (event) {
+        // Button that triggered the modal
+        const button = event.relatedTarget
+        
+        // Extract info from data-* attributes
+        const action = button.getAttribute('data-action')
+        const url = button.getAttribute('data-url')
+        const title = button.getAttribute('data-title')
+        
+        // Update the modal's content
+        const modalTitle = confirmModal.querySelector('.modal-title')
+        const modalMessage = confirmModal.querySelector('#modalMessage')
+        const modalConfirmBtn = confirmModal.querySelector('#modalConfirmBtn')
+        const modalForm = confirmModal.querySelector('#modalForm')
+        const modalActionInput = confirmModal.querySelector('#modalActionInput')
+        const requestTitleDisplay = confirmModal.querySelector('#requestTitleDisplay')
+        const feedbackInput = confirmModal.querySelector('#feedbackInput')
+        const hiddenFeedback = confirmModal.querySelector('#hiddenFeedback')
+        
+        // Reset feedback
+        feedbackInput.value = ''
+        
+        requestTitleDisplay.textContent = 'Request: ' + title
+        modalForm.setAttribute('action', url)
+        modalActionInput.value = action
+        
+        // Sync feedback before submit
+        modalForm.addEventListener('submit', function() {
+            hiddenFeedback.value = feedbackInput.value
+        })
+        
+        if (action === 'approve') {
+            modalTitle.textContent = 'Approve Request'
+            modalMessage.textContent = 'Are you sure you want to APPROVE this request?'
+            modalConfirmBtn.className = 'btn btn-success'
+            modalConfirmBtn.textContent = 'Yes, Approve'
+        } else {
+            modalTitle.textContent = 'Reject Request'
+            modalMessage.textContent = 'Are you sure you want to REJECT this request?'
+            modalConfirmBtn.className = 'btn btn-danger'
+            modalConfirmBtn.textContent = 'Yes, Reject'
+        }
+    })
+</script>
+{% endblock %}

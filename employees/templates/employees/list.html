@@ -1,0 +1,48 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<h2>Employee Management</h2>
+<div class="mb-3">
+    <a href="#" 
+       data-bs-toggle="modal" 
+       data-remote-url="{% url 'employees:create' %}" 
+       data-modal-title="Add New Employee"
+       class="btn btn-primary">Add New Employee</a>
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Position</th>
+            <th>Department</th>
+            <th>Phone</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in employees %}
+        <tr>
+            <td>{{ e.user.username }}</td>
+            <td>{{ e.position }}</td>
+            <td>{{ e.department }}</td>
+            <td>{{ e.phone }}</td>
+            <td>
+                <a href="#" 
+                   data-bs-toggle="modal" 
+                   data-remote-url="{% url 'employees:update' e.pk %}" 
+                   data-modal-title="Edit Employee"
+                   class="btn btn-sm btn-warning">Edit</a>
+                <a href="#" 
+                   data-bs-toggle="modal" 
+                   data-remote-url="{% url 'employees:delete' e.pk %}" 
+                   data-modal-title="Delete Employee"
+                   class="btn btn-sm btn-danger">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Pagination -->
+{% include 'users/pagination.html' with page_obj=employees %}
+{% endblock %}

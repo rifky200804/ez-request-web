@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EZ Request Users</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        }
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .nav-link {
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-link:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="bg-light d-flex flex-column min-vh-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'users:dashboard' %}{% else %}/{% endif %}">
+                <i class="bi bi-lightning-charge-fill text-warning"></i> EZ Request
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'users:dashboard' %}">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% load user_extras %}
+                    {% if user.is_authenticated and user|has_employee %}
+                        {% if user.employee.role == 'KARYAWAN' or user.employee.role == 'MANAGER' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'service_requests:list' %}">
+                                <i class="bi bi-file-earmark-text me-1"></i> My Requests
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if user.employee.role == 'MANAGER' or user.employee.role == 'DIREKTUR' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'service_requests:approvals' %}">
+                                <i class="bi bi-check2-square me-1"></i> Approvals
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if user.employee.role == 'ADMIN' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'employees:list' %}">
+                                <i class="bi bi-people me-1"></i> Employees
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                
+                <div class="d-flex align-items-center">
+                    {% if user.is_authenticated %}
+                        <span class="navbar-text me-3 text-light small">
+                            <i class="bi bi-person-circle me-1"></i> {{ user.username }} 
+                            <span class="badge bg-secondary ms-1">{{ user.employee.role|default:"User" }}</span>
+                        </span>
+                        <a href="{% url 'users:logout' %}" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    {% else %}
+                        <li class="nav-item me-2">
+                            <a href="{% url 'users:login' %}" 
+                               class="btn btn-outline-light btn-sm rounded-pill px-4">Login</a>
+                        </li>
+                    {% endif %}
+
+
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="main-container" class="container mt-4 mb-5 flex-grow-1">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm border-0" role="alert">
+                    <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+
+    <footer class="bg-white border-top py-4 mt-auto">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <span class="text-muted small">&copy; {% now "Y" %} <strong>EZ Request v1</strong>. All rights reserved.</span>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                    <span class="text-muted small">Built with <i class="bi bi-heart-fill text-danger"></i> by <strong>Kelompok 20</strong></span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Universal Remote Modal -->
+    <div class="modal fade" id="remoteModal" tabindex="-1" aria-labelledby="remoteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="remoteModalLabel">Loading...</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4" id="remoteModalBody">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const remoteModalElement = document.getElementById('remoteModal');
+            const remoteModal = new bootstrap.Modal(remoteModalElement);
+            const modalBody = document.getElementById('remoteModalBody');
+            const modalTitle = document.getElementById('remoteModalLabel');
+
+            // Function to handle link clicks
+            document.body.addEventListener('click', function(e) {
+                const target = e.target.closest('[data-bs-toggle="modal"][data-remote-url]');
+                if (target) {
+                    e.preventDefault();
+                    const url = target.getAttribute('data-remote-url');
+                    const title = target.getAttribute('data-modal-title') || 'Form';
+                    
+                    modalTitle.innerText = title;
+                    modalBody.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+                    remoteModal.show();
+
+                    fetch(url)
+                        .then(response => response.text())
+                        .then(html => {
+                            // Create a temporary element to parse the HTML
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            
+                            // Optimization: Look for the most relevant content to avoid nested grid constraints
+                            const mainContent = doc.getElementById('main-container') || doc.body;
+                            const cardBody = mainContent.querySelector('.card-body');
+                            const form = mainContent.querySelector('form');
+                            
+                            if (cardBody) {
+                                modalBody.innerHTML = cardBody.innerHTML;
+                            } else if (form) {
+                                modalBody.innerHTML = form.outerHTML;
+                            } else {
+                                modalBody.innerHTML = mainContent.innerHTML;
+                            }
+
+                            // Improve UI: Convert any "Cancel" buttons inside the modal to simply close the modal
+                            const cancelBtns = modalBody.querySelectorAll('a[href*="list"], .btn-secondary');
+                            cancelBtns.forEach(btn => {
+                                if (btn.textContent.trim().toLowerCase() === 'cancel') {
+                                    btn.setAttribute('href', '#');
+                                    btn.setAttribute('data-bs-dismiss', 'modal');
+                                }
+                            });
+                            
+                            // Initialize any forms inside the modal for AJAX submission
+                            const forms = modalBody.querySelectorAll('form');
+
+
+                            forms.forEach(form => {
+                                form.addEventListener('submit', function(se) {
+                                    se.preventDefault();
+                                    const formData = new FormData(this);
+                                    
+                                    // Set button to loading state
+                                    const submitBtn = this.querySelector('[type="submit"]');
+                                    const originalBtnText = submitBtn.innerHTML;
+                                    submitBtn.disabled = true;
+                                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+                                    fetch(url, {
+                                        method: 'POST',
+                                        body: formData,
+                                        headers: {
+                                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                        }
+                                    })
+                                    .then(response => {
+                                        if (response.redirected) {
+                                            // Successfully saved, refresh the main page
+                                            window.location.reload();
+                                        } else {
+                                            return response.text();
+                                        }
+                                    })
+                                    .then(text => {
+                                        if (text) {
+                                            // If we get text back, it's likely a form with errors
+                                            const errorDoc = parser.parseFromString(text, 'text/html');
+                                            const errorContent = errorDoc.querySelector('.container') || errorDoc.body;
+                                            modalBody.innerHTML = errorContent.innerHTML;
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        submitBtn.disabled = false;
+                                        submitBtn.innerHTML = originalBtnText;
+                                    });
+                                });
+                            });
+                        });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+

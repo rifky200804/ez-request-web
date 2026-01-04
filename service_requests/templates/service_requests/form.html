@@ -1,0 +1,101 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Request Type & Title -->
+                    <div class="mb-3">
+                        <label class="form-label">Request Type</label>
+                        {{ form.request_type }}
+                        <div class="text-danger small">{{ form.request_type.errors }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        {{ form.title }}
+                        <div class="text-danger small">{{ form.title.errors }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                        <div class="text-danger small">{{ form.description.errors }}</div>
+                    </div>
+
+                    <!-- Approvers Section -->
+                    <div class="card bg-light border-0 mb-3 p-3">
+                        <h6 class="text-muted mb-3"><i class="bi bi-person-check"></i> Approvals Required</h6>
+                        <div class="row">
+                            {% if form.manager_approver.is_hidden %}
+                                {{ form.manager_approver }}
+                            {% else %}
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Manager Approver</label>
+                                {{ form.manager_approver }}
+                                <div class="text-danger small">{{ form.manager_approver.errors }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Director Approver</label>
+                                {{ form.director_approver }}
+                                <div class="text-danger small">{{ form.director_approver.errors }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Fields Section -->
+                    <div class="card bg-light border-0 mb-3 p-3">
+                        <h6 class="text-muted mb-3"><i class="bi bi-sliders"></i> Specific Details</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount (Reimbursement)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    {{ form.amount }}
+                                </div>
+                                <div class="text-danger small">{{ form.amount.errors }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Attachment</label>
+                                {{ form.attachment }}
+                                <div class="text-danger small">{{ form.attachment.errors }}</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Start Date (Leave)</label>
+                                {{ form.start_date }}
+                                <div class="text-danger small">{{ form.start_date.errors }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">End Date (Leave)</label>
+                                {{ form.end_date }}
+                                <div class="text-danger small">{{ form.end_date.errors }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="javascript:history.back()" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">Submit Request</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
