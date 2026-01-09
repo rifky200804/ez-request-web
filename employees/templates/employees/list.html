@@ -32,11 +32,14 @@
                    data-remote-url="{% url 'employees:update' e.pk %}" 
                    data-modal-title="Edit Employee"
                    class="btn btn-sm btn-warning">Edit</a>
+                
+                {% if e.user != request.user %}
                 <a href="#" 
                    data-bs-toggle="modal" 
                    data-remote-url="{% url 'employees:delete' e.pk %}" 
                    data-modal-title="Delete Employee"
                    class="btn btn-sm btn-danger">Delete</a>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}

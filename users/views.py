@@ -8,6 +8,18 @@ from users.models import User
 def welcome_view(request):
     return render(request, 'users/welcome.html')
 
+def about_view(request):
+    return render(request, 'users/about.html')
+
+def contact_view(request):
+    return render(request, 'users/contact.html')
+
+def gallery_view(request):
+    return render(request, 'users/gallery.html')
+
+def team_view(request):
+    return render(request, 'users/team.html')
+
 def register_view(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)

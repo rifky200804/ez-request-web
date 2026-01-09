@@ -65,6 +65,12 @@ def employee_delete_view(request, pk):
         return redirect('users:dashboard')
 
     employee = get_object_or_404(Employee, pk=pk)
+    
+    # Prevent deleting own profile
+    if employee.user == request.user:
+        messages.error(request, "You cannot delete your own profile.")
+        return redirect('employees:list')
+
     if request.method == 'POST':
         employee.delete()
         messages.success(request, "Employee profile deleted successfully")

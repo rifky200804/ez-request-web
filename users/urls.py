@@ -7,13 +7,21 @@ from users.views import (
     user_update_view, 
     user_delete_view,
     dashboard_view,
-    welcome_view
+    welcome_view,
+    about_view,
+    contact_view,
+    gallery_view,
+    team_view
 )
 
 app_name = 'users'
 
 urlpatterns = [
-    path('', welcome_view, name='welcome'), # Welcome page
+    path('', welcome_view, name='welcome'),
+    path('about/', about_view, name='about'),
+    path('contact/', contact_view, name='contact'),
+    path('gallery/', gallery_view, name='gallery'),
+    path('team/', team_view, name='team'),
     path('dashboard/', dashboard_view, name='dashboard'),
 
     path('login/', login_view, name='login'),

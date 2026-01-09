@@ -1,0 +1,125 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="row align-items-center justify-content-center py-5">
+    <div class="col-lg-12">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold mb-3">Project <span class="text-primary">Gallery</span></h1>
+            <p class="lead text-muted">A glimpse into our workspace and activities.</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Gallery Item 1 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm overflow-hidden h-100 gallery-card">
+                    <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top gallery-img" alt="Office Meeting">
+                    <div class="gallery-overlay d-flex align-items-center justify-content-center">
+                        <div class="text-center text-white">
+                            <h5 class="fw-bold">Strategic Planning</h5>
+                            <small>Office Life</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gallery Item 2 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm overflow-hidden h-100 gallery-card">
+                    <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top gallery-img" alt="Team Discussion">
+                    <div class="gallery-overlay d-flex align-items-center justify-content-center">
+                        <div class="text-center text-white">
+                            <h5 class="fw-bold">Brainstorming</h5>
+                            <small>Collaboration</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gallery Item 3 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm overflow-hidden h-100 gallery-card">
+                    <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top gallery-img" alt="Conference">
+                    <div class="gallery-overlay d-flex align-items-center justify-content-center">
+                        <div class="text-center text-white">
+                            <h5 class="fw-bold">Company Summit</h5>
+                            <small>Events</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gallery Item 4 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm overflow-hidden h-100 gallery-card">
+                    <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top gallery-img" alt="Coding Session">
+                    <div class="gallery-overlay d-flex align-items-center justify-content-center">
+                        <div class="text-center text-white">
+                            <h5 class="fw-bold">Development Sprint</h5>
+                            <small>Technology</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gallery Item 5 -->
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm overflow-hidden h-100 gallery-card">
+                    <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top gallery-img" alt="Team Lunch">
+                    <div class="gallery-overlay d-flex align-items-center justify-content-center">
+                        <div class="text-center text-white">
+                            <h5 class="fw-bold">Team Bonding</h5>
+                            <small>Social</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Gallery Item 6 -->
+             <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm overflow-hidden h-100 gallery-card">
+                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="card-img-top gallery-img" alt="Open Space">
+                    <div class="gallery-overlay d-flex align-items-center justify-content-center">
+                        <div class="text-center text-white">
+                            <h5 class="fw-bold">Our Office</h5>
+                            <small>Workplace</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{% url 'users:welcome' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-left me-2"></i>Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .gallery-img {
+        height: 250px;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .gallery-card:hover .gallery-img {
+        transform: scale(1.1);
+    }
+
+    .gallery-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .gallery-card:hover .gallery-overlay {
+        opacity: 1;
+    }
+</style>
+{% endblock %}

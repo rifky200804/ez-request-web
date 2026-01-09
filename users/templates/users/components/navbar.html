@@ -1,0 +1,85 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'users:dashboard' %}{% else %}/{% endif %}">
+            <i class="bi bi-lightning-charge-fill text-warning"></i> EZ Request
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                {% if not user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'users:welcome' %}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'users:about' %}">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'users:contact' %}">Contact</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'users:gallery' %}">Gallery</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'users:team' %}">Team</a>
+                </li>
+                {% endif %}
+
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'users:dashboard' %}">
+                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% load user_extras %}
+                {% if user.is_authenticated and user|has_employee %}
+                    {% if user.employee.role == 'KARYAWAN' or user.employee.role == 'MANAGER' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'service_requests:list' %}">
+                            <i class="bi bi-file-earmark-text me-1"></i> My Requests
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if user.employee.role == 'MANAGER' or user.employee.role == 'DIREKTUR' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'service_requests:approvals' %}">
+                            <i class="bi bi-check2-square me-1"></i> Approvals
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if user.employee.role == 'ADMIN' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'employees:list' %}">
+                            <i class="bi bi-people me-1"></i> Employees
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+            
+            <div class="d-flex align-items-center">
+                {% if user.is_authenticated %}
+                    <span class="navbar-text me-3 text-light small">
+                        <i class="bi bi-person-circle me-1"></i> {{ user.username }} 
+                        <span class="badge bg-secondary ms-1">{{ user.employee.role|default:"User" }}</span>
+                    </span>
+                    <a href="{% url 'users:logout' %}" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                {% else %}
+                    <div class="me-2">
+                        <a href="{% url 'users:login' %}" 
+                           class="btn btn-outline-light btn-sm rounded-pill px-4">Login</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
