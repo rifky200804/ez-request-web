@@ -11,7 +11,8 @@ from users.views import (
     about_view,
     contact_view,
     gallery_view,
-    team_view
+    team_view,
+    check_request_view
 )
 
 app_name = 'users'
@@ -22,6 +23,7 @@ urlpatterns = [
     path('contact/', contact_view, name='contact'),
     path('gallery/', gallery_view, name='gallery'),
     path('team/', team_view, name='team'),
+    path('check-request/', check_request_view, name='check_request'),
     path('dashboard/', dashboard_view, name='dashboard'),
 
     path('login/', login_view, name='login'),

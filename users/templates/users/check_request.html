@@ -1,0 +1,411 @@
+{% extends 'users/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold mb-3">Simulasi Layanan & Penggajian</h1>
+        <p class="lead text-muted">Uji alur kerja otomatis kami: Perhitungan Gaji & Persetujuan Permintaan yang detail.</p>
+    </div>
+
+    <!-- START: PAYROLL SIMULATION SECTION -->
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="card-header bg-white border-0 py-3">
+             <h4 class="fw-bold text-primary mb-0"><i class="bi bi-calculator me-2"></i>Simulasi Gaji & Tunjangan</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <!-- FORM -->
+                <div class="col-lg-5 border-end">
+                    <form method="POST" action="{% url 'users:check_request' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="calculate_salary" value="true">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nama Lengkap</label>
+                            <input type="text" name="name" class="form-control" placeholder="Masukkan nama Anda" required value="{{ result.name|default:'' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Jabatan (Role)</label>
+                            <select name="role" class="form-select">
+                                <option value="Intern" {% if result.role == 'Intern' %}selected{% endif %}>Intern</option>
+                                <option value="Staff" {% if result.role == 'Staff' %}selected{% endif %}>Staff</option>
+                                <option value="Developer" {% if result.role == 'Developer' %}selected{% endif %}>Developer</option>
+                                <option value="Manager" {% if result.role == 'Manager' %}selected{% endif %}>Manager</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Agama (Untuk Perhitungan Zakat)</label>
+                            <select name="religion" class="form-select">
+                                <option value="Islam" {% if result.religion == 'Islam' %}selected{% endif %}>Islam</option>
+                                <option value="Christian" {% if result.religion == 'Christian' %}selected{% endif %}>Kristen</option>
+                                <option value="Catholic" {% if result.religion == 'Catholic' %}selected{% endif %}>Katolik</option>
+                                <option value="Hindu" {% if result.religion == 'Hindu' %}selected{% endif %}>Hindu</option>
+                                <option value="Buddhist" {% if result.religion == 'Buddhist' %}selected{% endif %}>Buddha</option>
+                                <option value="Other" {% if result.religion == 'Other' %}selected{% endif %}>Lainnya</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill mt-2">
+                            <i class="bi bi-calculator me-2"></i>Hitung Gaji
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- RESULT -->
+                <div class="col-lg-7">
+                    {% if result %}
+                    <div class="bg-light p-4 rounded-3 h-100 position-relative">
+                        <h5 class="fw-bold mb-4 border-bottom pb-2">Simulasi Slip Gaji</h5>
+                        <div class="row g-3">
+                            <div class="col-6 text-muted">Karyawan:</div>
+                            <div class="col-6 fw-bold text-end">{{ result.name }}</div>
+                            
+                            <div class="col-6 text-muted">Jabatan:</div>
+                            <div class="col-6 fw-bold text-end">{{ result.role }}</div>
+                            
+                            <hr class="my-2">
+                            
+                            <div class="col-6">Gaji Pokok:</div>
+                            <div class="col-6 text-end">Rp {{ result.base_salary|intcomma }}</div>
+                            
+                            <div class="col-6 text-success is-valid">Tunjangan Transport:</div>
+                            <div class="col-6 text-end text-success">+ Rp {{ result.transport|intcomma }}</div>
+                            
+                            <div class="col-6 text-success">Uang Makan:</div>
+                            <div class="col-6 text-end text-success">+ Rp {{ result.meal|intcomma }}</div>
+                            
+                            <div class="col-6 fw-bold mt-2">Gaji Kotor:</div>
+                            <div class="col-6 text-end fw-bold mt-2">Rp {{ result.gross|intcomma }}</div>
+                            
+                            {% if result.zakat > 0 %}
+                            <div class="col-6 text-warning mt-1">Zakat (2.5%):</div>
+                            <div class="col-6 text-end text-warning mt-1">- Rp {{ result.zakat|intcomma }}</div>
+                            {% else %}
+                             <div class="col-6 text-muted mt-1 fst-italic">Zakat:</div>
+                             <div class="col-6 text-end text-muted mt-1">-</div>
+                            {% endif %}
+                            
+                            <hr class="my-2">
+                            
+                            <div class="col-6 fs-5 fw-bold text-primary">Gaji Bersih (Net):</div>
+                            <div class="col-6 fs-5 fw-bold text-end text-primary">Rp {{ result.net_salary|intcomma }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted p-5 text-center">
+                        <i class="bi bi-receipt display-4 mb-3 text-secondary opacity-50"></i>
+                        <p>Isi formulir dan klik Hitung untuk melihat estimasi slip gaji.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- END: PAYROLL SIMULATION SECTION -->
+
+
+    <!-- START: REQUEST/PROCESS SIMULATION -->
+    <div class="row g-4">
+        
+        <!-- LEFT COLUMN: INPUT/INTERACTION -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                     <h4 class="fw-bold text-success mb-0"><i class="bi bi-diagram-3 me-2"></i>Alur Simulasi Proses</h4>
+                </div>
+                <div class="card-body">
+                    
+                    {% if sim_stage == 'identity' %}
+                    <!-- STAGE 0: IDENTITY CHECK -->
+                    <h5 class="card-title mb-4">Langkah 1: Cek Identitas</h5>
+                    <p class="text-muted">Untuk memulai simulasi, silakan identifikasi peran Anda.</p>
+                    
+                    <form method="POST" action="{% url 'users:check_request' %}">
+                         {% csrf_token %}
+                         <input type="hidden" name="start_sim" value="true">
+                         
+                         <div class="row mb-3">
+                             <div class="col-md-6">
+                                 <label class="form-label">Nama Anda</label>
+                                 <input type="text" name="sim_name" class="form-control" placeholder="Budi Santoso" required>
+                             </div>
+                             <div class="col-md-6">
+                                 <label class="form-label">Peran (Role)</label>
+                                 <select name="sim_role" class="form-select">
+                                     <option value="Intern">Intern (Magang)</option>
+                                     <option value="Staff">Staff</option>
+                                     <option value="Manager">Manager</option>
+                                     <option value="Director">Direktur</option>
+                                 </select>
+                             </div>
+                         </div>
+                         <button type="submit" class="btn btn-primary px-4 rounded-pill">Mulai Simulasi <i class="bi bi-arrow-right"></i></button>
+                    </form>
+
+                    {% elif sim_stage == 'unauthorized' %}
+                    <!-- STAGE: UNAUTHORIZED (Intern) -->
+                    <div class="alert alert-danger">
+                        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Akses Terbatas</h4>
+                        <p>Halo, <strong>{{ sim_identity.name }} ({{ sim_identity.role }})</strong>.</p>
+                        <p>Sebagai magang, Anda tidak memiliki izin untuk mengajukan permintaan operasional di sistem ini.</p>
+                        <hr>
+                        <a href="{% url 'users:check_request' %}" class="btn btn-sm btn-outline-danger">Kembali</a>
+                    </div>
+
+                    {% elif sim_stage == 'manager_menu' %}
+                    <!-- STAGE: MANAGER MENU (New Step) -->
+                    <h5 class="card-title mb-3">Dasbor Manajer</h5>
+                    <p class="text-muted">Halo <strong>{{ sim_identity.name }}</strong>. Sebagai Manajer, apa yang ingin Anda lakukan hari ini?</p>
+                    
+                    <form method="POST" action="{% url 'users:check_request' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="manager_action" value="true">
+                        <input type="hidden" name="sim_name" value="{{ sim_identity.name }}">
+                        <input type="hidden" name="sim_role" value="{{ sim_identity.role }}">
+                        
+                        <div class="d-grid gap-3">
+                            <button type="submit" name="manager_choice" value="create" class="btn btn-outline-primary btn-lg text-start">
+                                <i class="bi bi-file-earmark-plus me-3"></i> <strong>Buat Permintaan Baru</strong>
+                                <small class="d-block text-muted ms-5">Ajukan Proposal, Reimbursement, atau Cuti.</small>
+                            </button>
+                            
+                            <button type="submit" name="manager_choice" value="approve" class="btn btn-outline-success btn-lg text-start">
+                                <i class="bi bi-check-circle-fill me-3"></i> <strong>Setujui Permintaan Tertunda</strong>
+                                <small class="d-block text-muted ms-5">Tinjau dan setujui permintaan dari staff Anda.</small>
+                            </button>
+                        </div>
+                    </form>
+
+                    {% elif sim_stage == 'director_approval' or sim_stage == 'manager_approval_list' %}
+                    <!-- STAGE: APPROVAL CONSOLE (Director OR Manager) -->
+                     
+                     {% if sim_stage == 'director_approval' %}
+                         <h5 class="card-title mb-3">Konsol Direktur</h5>
+                         <div class="alert alert-info"><i class="bi bi-info-circle"></i> Meninjau Permintaan (Eskalasi)</div>
+                     {% else %}
+                         <h5 class="card-title mb-3">Konsol Persetujuan Manajer</h5>
+                         <div class="alert alert-success"><i class="bi bi-list-check"></i> Meninjau Permintaan Staff</div>
+                     {% endif %}
+                     
+                     <div class="bg-light p-3 rounded mb-4 border-start border-4 border-primary">
+                         <h6 class="fw-bold">{{ p_result.title }} <span class="badge bg-primary ms-2">{{ p_result.category }}</span></h6>
+                         <p class="text-muted mb-1">{{ p_result.description }}</p>
+                         <p class="mb-0 fw-bold text-dark">Anggaran/Jumlah: Rp {{ p_result.amount|intcomma }}</p>
+                         
+                         <div class="mt-3 pt-3 border-top d-flex text-muted small">
+                              <div class="me-4"><i class="bi bi-person me-1"></i> {{ p_result.submitted_by }} ({{ p_result.submitter_role }})</div>
+                              <div class="me-4"><i class="bi bi-clock me-1"></i> {{ p_result.submitted_at }}</div>
+                         </div>
+                     </div>
+                     
+                     <form method="POST" action="{% url 'users:check_request' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="approve_sim_request" value="true">
+                        <!-- Persist Data -->
+                        <input type="hidden" name="title" value="{{ p_result.title }}">
+                        <input type="hidden" name="category" value="{{ p_result.category }}">
+                        <input type="hidden" name="description" value="{{ p_result.description }}">
+                        <input type="hidden" name="estimated_time" value="{{ p_result.estimated_time }}">
+                        <input type="hidden" name="amount" value="{{ p_result.amount }}">
+                        <input type="hidden" name="submitted_by" value="{{ p_result.submitted_by }}">
+                        <input type="hidden" name="submitter_role" value="{{ p_result.submitter_role }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Catatan Keputusan</label>
+                            <textarea name="manager_comment" class="form-control" rows="2" placeholder="Alasan persetujuan atau penolakan..." required></textarea>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="action" value="approve" class="btn btn-success flex-grow-1">
+                                <i class="bi bi-check-circle-fill me-1"></i> Setujui
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger flex-grow-1">
+                                <i class="bi bi-x-circle-fill me-1"></i> Tolak
+                            </button>
+                        </div>
+                     </form>
+
+                    {% elif sim_stage == 'create_request' %}
+                    <!-- STAGE: CREATE REQUEST (Staff/Manager) -->
+                     <h5 class="card-title mb-4">Langkah 2: Ajukan Permintaan</h5>
+                     <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded">
+                         <div>
+                             <span class="text-muted small d-block">Masuk sebagai:</span>
+                             <strong>{{ sim_identity.name }}</strong> <span class="badge bg-secondary">{{ sim_identity.role }}</span>
+                         </div>
+                         <a href="{% url 'users:check_request' %}" class="btn btn-sm btn-outline-secondary">Ganti Pengguna</a>
+                     </div>
+                     
+                     <form method="POST" action="{% url 'users:check_request' %}">
+                         {% csrf_token %}
+                         <input type="hidden" name="submit_sim_request" value="true">
+                         <!-- Persist Identity -->
+                         <input type="hidden" name="sim_name" value="{{ sim_identity.name }}">
+                         <input type="hidden" name="sim_role" value="{{ sim_identity.role }}">
+                         
+                         <div class="mb-3">
+                             <label class="form-label">Kategori Layanan (Diizinkan untuk {{ sim_identity.role }})</label>
+                             <select name="category" id="requestCategory" class="form-select" onchange="toggleFields()">
+                                {% if 'PROPOSAL' in allowed_categories %}
+                                <option value="PROPOSAL">Pengajuan Proposal</option>
+                                {% endif %}
+                                {% if 'REIMBURSEMENT' in allowed_categories %}
+                                <option value="REIMBURSEMENT">Reimbursement (Penggantian Dana)</option>
+                                {% endif %}
+                                {% if 'LEAVE' in allowed_categories %}
+                                <option value="LEAVE">Permintaan Cuti</option>
+                                {% endif %}
+                             </select>
+                         </div>
+                         
+                         <div class="mb-3">
+                             <label class="form-label">Judul Permintaan</label>
+                             <input type="text" name="title" class="form-control" placeholder="Contoh: Cuti Tahunan" required>
+                         </div>
+                         
+                         <!-- DYNAMIC FIELDS -->
+                         <div class="mb-3 bg-light p-3 rounded" id="reimbursementFields" style="display: none;">
+                             <label class="form-label">Jumlah (Rp)</label>
+                             <input type="number" name="amount" class="form-control" placeholder="Contoh: 150000">
+                             <div class="form-text">Masukkan nominal yang akan diganti.</div>
+                         </div>
+                         
+                         <div class="mb-3 bg-light p-3 rounded" id="leaveFields" style="display: none;">
+                             <div class="row">
+                                 <div class="col-md-6">
+                                     <label class="form-label">Tanggal Mulai</label>
+                                     <input type="date" name="start_date" class="form-control">
+                                 </div>
+                                 <div class="col-md-6">
+                                     <label class="form-label">Tanggal Selesai</label>
+                                     <input type="date" name="end_date" class="form-control">
+                                 </div>
+                             </div>
+                         </div>
+                         
+                         <div class="mb-3">
+                             <label class="form-label">Deskripsi</label>
+                             <textarea name="description" class="form-control" rows="3" placeholder="Jelaskan detail permintaan Anda..." required></textarea>
+                         </div>
+                         
+                         <button type="submit" class="btn btn-success w-100">
+                             <i class="bi bi-send me-1"></i> Kirim Permintaan
+                         </button>
+                     </form>
+                     
+                     <script>
+                         function toggleFields() {
+                             const category = document.getElementById('requestCategory').value;
+                             const reimbDiv = document.getElementById('reimbursementFields');
+                             const leaveDiv = document.getElementById('leaveFields');
+                             
+                             if (reimbDiv) reimbDiv.style.display = category === 'REIMBURSEMENT' ? 'block' : 'none';
+                             if (leaveDiv) leaveDiv.style.display = category === 'LEAVE' ? 'block' : 'none';
+                         }
+                         // Init
+                         window.onload = toggleFields;
+                     </script>
+                    
+                    {% elif sim_stage == 'submitted_wait' %}
+                    <!-- STAGE: SUBMITTED WAIT (Staff/Manager waiting for approval) -->
+                    <div class="text-center py-5">
+                        <div class="display-1 text-warning mb-3"><i class="bi bi-clock-history"></i></div>
+                        <h2 class="fw-bold text-dark">Permintaan Terkirim!</h2>
+                        <p class="lead text-muted">Permintaan Anda sekarang sedang <strong>Menunggu Persetujuan</strong>.</p>
+                        
+                        <div class="card shadow-sm mx-auto mt-4 text-start" style="max-width: 400px;">
+                            <div class="card-body">
+                                <h6 class="fw-bold">{{ p_result.title }} <span class="badge bg-warning text-dark">PENDING</span></h6>
+                                <p class="small text-muted mb-0">Diajukan oleh: {{ p_result.submitted_by }}</p>
+                            </div>
+                        </div>
+                        
+                         <div class="mt-5">
+                             <a href="{% url 'users:check_request' %}" class="btn btn-primary rounded-pill px-4">
+                                 <i class="bi bi-arrow-repeat me-1"></i> Mulai Simulasi Baru
+                             </a>
+                         </div>
+                    </div>
+
+
+                    {% elif sim_stage == 'completed' %}
+                    <!-- STAGE: RESULT (Of Approval) -->
+                    <div class="text-center py-4">
+                        {% if p_result.status == 'DISETUJUI' %}
+                            <div class="display-1 text-success mb-3"><i class="bi bi-check-circle-fill"></i></div>
+                            <h2 class="text-success fw-bold">Permintaan Disetujui!</h2>
+                            <p class="text-muted">Permintaan telah berhasil diproses dan disetujui.</p>
+                        {% else %}
+                             <div class="display-1 text-danger mb-3"><i class="bi bi-x-circle-fill"></i></div>
+                            <h2 class="text-danger fw-bold">Permintaan Ditolak</h2>
+                            <p class="text-muted">Maaf, permintaan Anda telah ditolak oleh atasan.</p>
+                        {% endif %}
+                        
+                         <div class="bg-light p-4 rounded text-start mx-auto mt-4" style="max-width: 400px;">
+                             <div class="d-flex justify-content-between mb-2">
+                                 <span class="text-muted">Permintaan:</span>
+                                 <span class="fw-bold">{{ p_result.title }}</span>
+                             </div>
+                             {% if p_result.amount %}
+                             <div class="d-flex justify-content-between mb-2">
+                                 <span class="text-muted">Jumlah:</span>
+                                 <span class="fw-bold">Rp {{ p_result.amount|intcomma }}</span>
+                             </div>
+                             {% endif %}
+                              <div class="d-flex justify-content-between mb-2">
+                                 <span class="text-muted">Diajukan Oleh:</span>
+                                 <span>{{ p_result.submitted_by }}</span>
+                             </div>
+                             <hr>
+                             <div class="mb-2">
+                                 <span class="text-muted small d-block">Komentar Penyetuju:</span>
+                                 <span class="fst-italic">"{{ p_result.manager_comment }}"</span>
+                             </div>
+                         </div>
+                         
+                         <div class="mt-4">
+                             <a href="{% url 'users:check_request' %}" class="btn btn-outline-primary rounded-pill">
+                                 <i class="bi bi-arrow-repeat me-1"></i> Mulai Simulasi Baru
+                             </a>
+                         </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+        
+        <!-- RIGHT COLUMN: INFO -->
+        <div class="col-lg-4">
+             <div class="card shadow-sm border-0 h-100 bg-light">
+                 <div class="card-body">
+                     <h5 class="fw-bold mb-3">Katalog Layanan</h5>
+                     <p class="text-muted small mb-4">Daftar referensi layanan dan waktu estimasi penyelesaian.</p>
+                     <div class="list-group">
+                         {% for svc in available_services %}
+                         <div class="list-group-item border-0 mb-2 rounded shadow-sm bg-white">
+                             <div class="d-flex w-100 justify-content-between align-items-center">
+                                 <h6 class="mb-1 fw-bold">{{ svc.title }}</h6>
+                                 <small class="text-muted">{{ svc.estimated_time }}</small>
+                             </div>
+                             <small class="text-primary">{{ svc.category }}</small>
+                         </div>
+                         {% endfor %}
+                     </div>
+                     
+                     <div class="mt-4 pt-4 border-top">
+                         <h6 class="fw-bold mb-3">Siap menggunakan sistem nyata?</h6>
+                         <div class="d-grid gap-2">
+                             <a href="{% url 'users:login' %}" class="btn btn-primary">Masuk ke Dashboard</a>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

@@ -26,6 +26,9 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'users:team' %}">Team</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'users:check_request' %}">Check Request</a>
+                </li>
                 {% endif %}
 
                 {% if user.is_authenticated %}
