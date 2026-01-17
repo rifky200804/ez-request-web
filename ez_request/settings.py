@@ -82,16 +82,47 @@ WSGI_APPLICATION = 'ez_request.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+# Database
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+import socket
+
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT', '3306')
+
+USE_MYSQL = False
+
+if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]):
+    try:
+        # Check if MySQL port is open
+        sock = socket.create_connection((DB_HOST, int(DB_PORT)), timeout=1)
+        sock.close()
+        USE_MYSQL = True
+    except (socket.timeout, socket.error):
+        print("⚠️ MySQL is not reachable. Falling back to SQLite.")
+        pass
+
+if USE_MYSQL:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation

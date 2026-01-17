@@ -54,30 +54,31 @@
             <div class="col-md-7 order-md-1">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body p-4 p-lg-5">
-                        <form>
+                        <form method="POST">
+                            {% csrf_token %}
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label for="firstName" class="form-label">First Name</label>
-                                    <input type="text" class="form-control" id="firstName" placeholder="John">
+                                    <input type="text" class="form-control" id="firstName" name="first_name" placeholder="John" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="lastName" class="form-label">Last Name</label>
-                                    <input type="text" class="form-control" id="lastName" placeholder="Doe">
+                                    <input type="text" class="form-control" id="lastName" name="last_name" placeholder="Doe" required>
                                 </div>
                                 <div class="col-12">
                                     <label for="email" class="form-label">Email Address</label>
-                                    <input type="email" class="form-control" id="email" placeholder="john@example.com">
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="john@example.com" required>
                                 </div>
                                 <div class="col-12">
                                     <label for="subject" class="form-label">Subject</label>
-                                    <input type="text" class="form-control" id="subject" placeholder="Need help with...">
+                                    <input type="text" class="form-control" id="subject" name="subject" placeholder="Need help with..." required>
                                 </div>
                                 <div class="col-12">
                                     <label for="message" class="form-label">Message</label>
-                                    <textarea class="form-control" id="message" rows="5" placeholder="Your message here..."></textarea>
+                                    <textarea class="form-control" id="message" name="message" rows="5" placeholder="Your message here..." required></textarea>
                                 </div>
                                 <div class="col-12 mt-4">
-                                    <button type="button" class="btn btn-primary px-5 py-2 rounded-pill w-100 w-md-auto">
+                                    <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill w-100 w-md-auto">
                                         Send Message <i class="bi bi-send-fill ms-2"></i>
                                     </button>
                                 </div>

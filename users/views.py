@@ -12,6 +12,11 @@ def about_view(request):
     return render(request, 'users/about.html')
 
 def contact_view(request):
+    if request.method == 'POST':
+        # Process the contact form data here (e.g., send email)
+        # For now, just a success message as requested
+        messages.success(request, "Your message has been sent successfully! We will get back to you soon.")
+        return redirect('users:contact')
     return render(request, 'users/contact.html')
 
 def gallery_view(request):
