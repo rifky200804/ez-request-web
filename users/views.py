@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from users.forms import UserRegistrationForm, LoginForm, UserUpdateForm
 from users.models import User
+import uuid
+import datetime
 
 def welcome_view(request):
     return render(request, 'users/welcome.html')
@@ -13,8 +15,6 @@ def about_view(request):
 
 def contact_view(request):
     if request.method == 'POST':
-        # Process the contact form data here (e.g., send email)
-        # For now, just a success message as requested
         messages.success(request, "Your message has been sent successfully! We will get back to you soon.")
         return redirect('users:contact')
     return render(request, 'users/contact.html')
@@ -67,7 +67,7 @@ def calculate_salary_logic(name, role, religion):
 def check_request_view(request):
     """
     View for checking request status (dummy), calculating salary, and simulated approval flow.
-    Accessible without login.
+    Accessible without login. Uses Session to store list of requests.
     """
     
     # --- DUMMY DATA FOR REQUEST TYPES (DISPLAY PURPOSES) ---
@@ -77,19 +77,33 @@ def check_request_view(request):
         {"title": "Permintaan Cuti", "category": "LEAVE", "estimated_time": "1-2 Hari"},
     ]
 
+    # Initialize Session if not exists
+    if 'sim_queue' not in request.session:
+        request.session['sim_queue'] = []
+    
+    # Helper to get queue
+    sim_queue = request.session['sim_queue']
 
     context = {
         'available_services': available_services,
         'result': None, # For Salary Calculation Result
-        'p_result': None, # For Processing/Request Simulation Result
-        'sim_stage': 'identity', # 'identity', 'create_request', 'pending', 'director_approval', 'completed', 'unauthorized'
-        'sim_identity': None,
-        'allowed_categories': []
+        'sim_elements': sim_queue,
+        'sim_stage': request.session.get('sim_stage', 'identity'), 
+        'sim_identity': request.session.get('sim_identity', {}),
+        'allowed_categories': request.session.get('allowed_categories', [])
     }
 
     if request.method == "POST":
+        # === 0. RESET SIMULATION (Top Priority) ===
+        if 'reset_sim' in request.POST:
+            request.session['sim_queue'] = []
+            request.session['sim_stage'] = 'identity'
+            request.session['sim_identity'] = {}
+            request.session['allowed_categories'] = []
+            return redirect('users:check_request')
+
         # === 1. SALARY CALCULATION LOGIC ===
-        if 'calculate_salary' in request.POST:
+        elif 'calculate_salary' in request.POST:
             name = request.POST.get('name')
             role = request.POST.get('role')
             religion = request.POST.get('religion')
@@ -101,67 +115,67 @@ def check_request_view(request):
             name = request.POST.get('sim_name')
             role = request.POST.get('sim_role')
             
-            context['sim_identity'] = {'name': name, 'role': role}
+            identity = {'name': name, 'role': role}
+            request.session['sim_identity'] = identity
+            context['sim_identity'] = identity
             
-            if role == 'Intern':
-                context['sim_stage'] = 'unauthorized'
-                
-            elif role == 'Director':
-                context['sim_stage'] = 'director_approval'
-                # Generate a dummy request for Director to approve
-                context['p_result'] = {
-                    'title': 'Anggaran Pemasaran Q4',
-                    'description': 'Proposal untuk biaya kampanye pemasaran akhir tahun.',
-                    'category': 'PROPOSAL',
-                    'estimated_time': '1 Minggu',
-                    'status': 'MENUNGGU_PERSETUJUAN',
-                    'submitted_by': 'Alice Manajer',
-                    'submitter_role': 'Manager',
-                    'submitted_at': '2 Jam Lalu',
-                    'amount': '150000000' # High amount
-                }
+            if role == 'Director':
+                request.session['sim_stage'] = 'director_approval'
+                # Generate dummy requests only if empty to show something
+                if not sim_queue:
+                    dummy_req = {
+                        'id': str(uuid.uuid4()),
+                        'title': 'Anggaran Pemasaran Q4',
+                        'description': 'Proposal untuk biaya kampanye pemasaran akhir tahun.',
+                        'category': 'PROPOSAL',
+                        'estimated_time': '1 Minggu',
+                        'status': 'MENUNGGU_PERSETUJUAN',
+                        'submitted_by': 'Alice Manajer',
+                        'submitter_role': 'Manager',
+                        'submitted_at': '2 Jam Lalu',
+                        'amount': '150000000',
+                        'manager_status': 'APPROVED'
+                    }
+                    sim_queue.append(dummy_req)
+                    request.session['sim_queue'] = sim_queue
                 
             elif role == 'Manager':
-                 context['sim_stage'] = 'manager_menu'
+                 request.session['sim_stage'] = 'manager_menu'
                  
             else: # Staff
-                context['sim_stage'] = 'create_request'
-                context['allowed_categories'] = ['REIMBURSEMENT', 'LEAVE']
+                request.session['sim_stage'] = 'create_request'
+                request.session['allowed_categories'] = ['REIMBURSEMENT', 'LEAVE']
 
         # === 3. MANAGER MENU ACTION ===
         elif 'manager_action' in request.POST:
-             # Capture Identity
-             req_name = request.POST.get('sim_name')
-             req_role = request.POST.get('sim_role')
-             context['sim_identity'] = {'name': req_name, 'role': req_role}
-             
+             # Identity already in session
              action = request.POST.get('manager_choice')
              
              if action == 'create':
-                 context['sim_stage'] = 'create_request'
-                 context['allowed_categories'] = ['PROPOSAL', 'REIMBURSEMENT', 'LEAVE']
+                 request.session['sim_stage'] = 'create_request'
+                 request.session['allowed_categories'] = ['PROPOSAL', 'REIMBURSEMENT', 'LEAVE']
              elif action == 'approve':
-                 context['sim_stage'] = 'manager_approval_list'
-                 # Simulate a request from a Staff member for the Manager to approve
-                 context['p_result'] = {
-                    'title': 'Charger Laptop Baru',
-                    'description': 'Charger saya saat ini rusak.',
-                    'category': 'REIMBURSEMENT',
-                    'estimated_time': '2 Hari',
-                    'status': 'MENUNGGU_PERSETUJUAN',
-                    'submitted_by': 'Bob Staf',
-                    'submitter_role': 'Staff',
-                    'submitted_at': '1 Jam Lalu',
-                    'amount': '450000'
-                }
+                 request.session['sim_stage'] = 'manager_approval_list'
+                 # Simulate a request from a Staff if empty
+                 if not sim_queue:
+                     dummy_req = {
+                        'id': str(uuid.uuid4()),
+                        'title': 'Charger Laptop Baru',
+                        'description': 'Charger saya saat ini rusak.',
+                        'category': 'REIMBURSEMENT',
+                        'estimated_time': '2 Hari',
+                        'status': 'MENUNGGU_PERSETUJUAN',
+                        'submitted_by': 'Bob Staf',
+                        'submitter_role': 'Staff',
+                        'submitted_at': '1 Jam Lalu',
+                        'amount': '450000',
+                        'manager_status': 'PENDING'
+                    }
+                     sim_queue.append(dummy_req)
+                     request.session['sim_queue'] = sim_queue
 
         # === 4. SIMULATION: SUBMIT REQUEST (Staff/Manager) ===
         elif 'submit_sim_request' in request.POST:
-            # Re-capture identity
-            req_name = request.POST.get('sim_name')
-            req_role = request.POST.get('sim_role')
-            context['sim_identity'] = {'name': req_name, 'role': req_role}
-            
             req_type = request.POST.get('category')
             req_title = request.POST.get('title')
             req_desc = request.POST.get('description')
@@ -174,67 +188,70 @@ def check_request_view(request):
             elif req_type == 'LEAVE': estimation = "2 Hari"
             else: estimation = "3 Hari"
             
-            context['p_result'] = {
+            current_identity = request.session.get('sim_identity', {})
+            
+            new_req = {
+                'id': str(uuid.uuid4()),
                 'title': req_title,
                 'description': req_desc,
                 'category': req_type,
                 'estimated_time': estimation,
                 'status': 'MENUNGGU_PERSETUJUAN',
-                'submitted_by': req_name,
-                'submitter_role': req_role,
+                'submitted_by': current_identity.get('name', 'Unknown'),
+                'submitter_role': current_identity.get('role', 'Staff'),
                 'submitted_at': 'Baru Saja',
                 'amount': req_amount,
                 'start_date': req_start_date,
                 'end_date': req_end_date,
+                'manager_status': 'PENDING' # Default pending
             }
             
-            if req_role == 'Staff':
-                context['sim_stage'] = 'submitted_wait' # Staff sees "Waiting" screen
-            else:
-                context['sim_stage'] = 'submitted_wait' # Manager also sees wait (or directly approved if self-approval allowed, but standard flow waits for Director usually. For Sim simplicity, Manager request -> Wait for Director)
+            if current_identity.get('role') == 'Manager':
+                new_req['manager_status'] = 'APPROVED' 
+            
+            sim_queue.append(new_req)
+            request.session['sim_queue'] = sim_queue
+            
+            request.session['sim_stage'] = 'submitted_wait'
 
-
-        # === 4. SIMULATION: APPROVAL (Manager/Director) ===
+        # === 5. SIMULATION: APPROVAL (Manager/Director) ===
         elif 'approve_sim_request' in request.POST:
-             # Re-capture identity of the ACTOR (who is approving)
-             # NOTE: In 'pending' stage, we are switching roles to the Approver. 
-             # But for 'director_approval' stage, the Actor IS the Director.
-             
-             # Previous Request Data
-             req_title = request.POST.get('title')
-             req_desc = request.POST.get('description')
-             req_type = request.POST.get('category')
-             req_est = request.POST.get('estimated_time')
-             req_amount = request.POST.get('amount')
-             req_start_date = request.POST.get('start_date')
-             req_end_date = request.POST.get('end_date')
-             
-             req_submitter = request.POST.get('submitted_by')
-             req_submitter_role = request.POST.get('submitter_role')
-
-             # Capture Approval Data
+             req_id = request.POST.get('req_id')
              action = request.POST.get('action') # 'approve' or 'reject'
              manager_comment = request.POST.get('manager_comment')
              
              final_status = 'DISETUJUI' if action == 'approve' else 'DITOLAK'
              
-             context['p_result'] = {
-                'title': req_title,
-                'description': req_desc,
-                'category': req_type,
-                'estimated_time': req_est,
-                'status': final_status,
-                'submitted_by': req_submitter,
-                'submitter_role': req_submitter_role,
-                'submitted_at': 'Sebelumnya',
-                'manager_comment': manager_comment,
-                'approved_at': 'Baru Saja',
-                # Specifics
-                'amount': req_amount,
-                'start_date': req_start_date,
-                'end_date': req_end_date,
-            }
-             context['sim_stage'] = 'completed'
+             # Find and update
+             for req in sim_queue:
+                 if req['id'] == req_id:
+                     req['status'] = final_status
+                     req['manager_comment'] = manager_comment
+                     req['approved_at'] = 'Baru Saja'
+                     
+                     if action == 'approve':
+                         req['manager_status'] = 'APPROVED'
+                     else:
+                         req['manager_status'] = 'REJECTED'
+                     
+                     break
+             
+             request.session['sim_queue'] = sim_queue
+             # Stay on list
+             # request.session['sim_stage'] = 'completed'
+
+        # === 6. SWITCH USER (Keep Data) ===
+        elif 'switch_user' in request.POST:
+            request.session['sim_stage'] = 'identity'
+            request.session['sim_identity'] = {}
+            request.session['allowed_categories'] = []
+            return redirect('users:check_request')
+
+    # Update context from session state
+    context['sim_stage'] = request.session.get('sim_stage', 'identity')
+    context['sim_identity'] = request.session.get('sim_identity', {})
+    context['allowed_categories'] = request.session.get('allowed_categories', [])
+    context['sim_elements'] = request.session.get('sim_queue', [])
 
     return render(request, 'users/check_request.html', context)
 

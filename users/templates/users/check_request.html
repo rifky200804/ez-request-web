@@ -29,7 +29,6 @@
                         <div class="mb-3">
                             <label class="form-label">Jabatan (Role)</label>
                             <select name="role" class="form-select">
-                                <option value="Intern" {% if result.role == 'Intern' %}selected{% endif %}>Intern</option>
                                 <option value="Staff" {% if result.role == 'Staff' %}selected{% endif %}>Staff</option>
                                 <option value="Developer" {% if result.role == 'Developer' %}selected{% endif %}>Developer</option>
                                 <option value="Manager" {% if result.role == 'Manager' %}selected{% endif %}>Manager</option>
@@ -135,25 +134,22 @@
                              <div class="col-md-6">
                                  <label class="form-label">Peran (Role)</label>
                                  <select name="sim_role" class="form-select">
-                                     <option value="Intern">Intern (Magang)</option>
                                      <option value="Staff">Staff</option>
                                      <option value="Manager">Manager</option>
                                      <option value="Director">Direktur</option>
                                  </select>
                              </div>
                          </div>
-                         <button type="submit" class="btn btn-primary px-4 rounded-pill">Mulai Simulasi <i class="bi bi-arrow-right"></i></button>
+                         <div class="d-flex justify-content-between align-items-center">
+                             <button type="submit" class="btn btn-primary px-4 rounded-pill">Mulai Simulasi <i class="bi bi-arrow-right"></i></button>
+                             {% if sim_elements %}
+                                 <button type="submit" name="reset_sim" value="true" class="btn btn-link text-danger text-decoration-none btn-sm">
+                                     <i class="bi bi-trash"></i> Hapus Semua Data ({{ sim_elements|length }} Item)
+                                 </button>
+                             {% endif %}
+                         </div>
                     </form>
 
-                    {% elif sim_stage == 'unauthorized' %}
-                    <!-- STAGE: UNAUTHORIZED (Intern) -->
-                    <div class="alert alert-danger">
-                        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Akses Terbatas</h4>
-                        <p>Halo, <strong>{{ sim_identity.name }} ({{ sim_identity.role }})</strong>.</p>
-                        <p>Sebagai magang, Anda tidak memiliki izin untuk mengajukan permintaan operasional di sistem ini.</p>
-                        <hr>
-                        <a href="{% url 'users:check_request' %}" class="btn btn-sm btn-outline-danger">Kembali</a>
-                    </div>
 
                     {% elif sim_stage == 'manager_menu' %}
                     <!-- STAGE: MANAGER MENU (New Step) -->
@@ -190,43 +186,87 @@
                          <div class="alert alert-success"><i class="bi bi-list-check"></i> Meninjau Permintaan Staff</div>
                      {% endif %}
                      
-                     <div class="bg-light p-3 rounded mb-4 border-start border-4 border-primary">
-                         <h6 class="fw-bold">{{ p_result.title }} <span class="badge bg-primary ms-2">{{ p_result.category }}</span></h6>
-                         <p class="text-muted mb-1">{{ p_result.description }}</p>
-                         <p class="mb-0 fw-bold text-dark">Anggaran/Jumlah: Rp {{ p_result.amount|intcomma }}</p>
-                         
-                         <div class="mt-3 pt-3 border-top d-flex text-muted small">
-                              <div class="me-4"><i class="bi bi-person me-1"></i> {{ p_result.submitted_by }} ({{ p_result.submitter_role }})</div>
-                              <div class="me-4"><i class="bi bi-clock me-1"></i> {{ p_result.submitted_at }}</div>
+                     {% if not sim_elements %}
+                        <p class="text-muted text-center py-4">Tidak ada permintaan tertunda saat ini.</p>
+                     {% endif %}
+
+                     {% for req in sim_elements %}
+                     <div class="card mb-3 border-start border-4 {% if req.status == 'MENUNGGU_PERSETUJUAN' or req.manager_status == 'PENDING' %}border-warning{% elif req.status == 'DISETUJUI' or req.manager_status == 'APPROVED' %}border-success{% else %}border-danger{% endif %} shadow-sm">
+                         <div class="card-body">
+                             <div class="d-flex justify-content-between">
+                                 <h6 class="fw-bold">{{ req.title }} <span class="badge bg-primary ms-2">{{ req.category }}</span></h6>
+                                 <small class="text-muted">{{ req.submitted_at }}</small>
+                             </div>
+                             <p class="text-muted mb-1 small">{{ req.description }}</p>
+                             <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="small">
+                                    <span class="fw-bold">Rp {{ req.amount|intcomma }}</span> | 
+                                    <i class="bi bi-person me-1"></i> {{ req.submitted_by }}
+                                </div>
+                                
+                                <!-- Status Badge or Actions -->
+                                {% if sim_stage == 'manager_approval_list' and req.manager_status == 'PENDING' %}
+                                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#action-{{ req.id }}">
+                                        Tinjau
+                                    </button>
+                                {% elif sim_stage == 'director_approval' and req.status == 'MENUNGGU_PERSETUJUAN' %}
+                                    <!-- Director sees pending final status -->
+                                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#action-{{ req.id }}">
+                                        Tinjau
+                                    </button>
+                                {% else %}
+                                    {% if req.status == 'DISETUJUI' or req.manager_status == 'APPROVED' %}
+                                        <span class="badge bg-success">DISETUJUI</span>
+                                    {% elif req.status == 'DITOLAK' or req.manager_status == 'REJECTED' %}
+                                        <span class="badge bg-danger">DITOLAK</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">PENDING</span>
+                                    {% endif %}
+                                {% endif %}
+                             </div>
+                             
+                             <!-- Action Form Collapse -->
+                             <div class="collapse mt-3" id="action-{{ req.id }}">
+                                 <div class="card card-body bg-light border-0">
+                                     <form method="POST" action="{% url 'users:check_request' %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="approve_sim_request" value="true">
+                                        <input type="hidden" name="req_id" value="{{ req.id }}">
+                                        
+                                        <div class="mb-2">
+                                            <input type="text" name="manager_comment" class="form-control form-control-sm" placeholder="Catatan keputusan..." required>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" name="action" value="approve" class="btn btn-sm btn-success flex-grow-1">Setujui</button>
+                                            <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger flex-grow-1">Tolak</button>
+                                        </div>
+                                     </form>
+                                 </div>
+                             </div>
+                             
+                             {% if req.manager_comment %}
+                             <div class="mt-2 small text-muted fst-italic border-top pt-2">
+                                 "{{ req.manager_comment }}"
+                             </div>
+                             {% endif %}
                          </div>
                      </div>
+                     {% endfor %}
                      
-                     <form method="POST" action="{% url 'users:check_request' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="approve_sim_request" value="true">
-                        <!-- Persist Data -->
-                        <input type="hidden" name="title" value="{{ p_result.title }}">
-                        <input type="hidden" name="category" value="{{ p_result.category }}">
-                        <input type="hidden" name="description" value="{{ p_result.description }}">
-                        <input type="hidden" name="estimated_time" value="{{ p_result.estimated_time }}">
-                        <input type="hidden" name="amount" value="{{ p_result.amount }}">
-                        <input type="hidden" name="submitted_by" value="{{ p_result.submitted_by }}">
-                        <input type="hidden" name="submitter_role" value="{{ p_result.submitter_role }}">
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Catatan Keputusan</label>
-                            <textarea name="manager_comment" class="form-control" rows="2" placeholder="Alasan persetujuan atau penolakan..." required></textarea>
-                        </div>
-                        
-                        <div class="d-flex gap-2">
-                            <button type="submit" name="action" value="approve" class="btn btn-success flex-grow-1">
-                                <i class="bi bi-check-circle-fill me-1"></i> Setujui
+                     <div class="mt-4 text-center d-flex justify-content-center gap-2">
+                        <form method="POST" action="{% url 'users:check_request' %}">
+                            {% csrf_token %}
+                            <button type="submit" name="switch_user" value="true" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                                <i class="bi bi-people me-1"></i> Ganti Peran
                             </button>
-                            <button type="submit" name="action" value="reject" class="btn btn-danger flex-grow-1">
-                                <i class="bi bi-x-circle-fill me-1"></i> Tolak
+                        </form>
+                        <form method="POST" action="{% url 'users:check_request' %}">
+                            {% csrf_token %}
+                            <button type="submit" name="reset_sim" value="true" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                <i class="bi bi-trash me-1"></i> Reset Data
                             </button>
-                        </div>
-                     </form>
+                        </form>
+                     </div>
 
                     {% elif sim_stage == 'create_request' %}
                     <!-- STAGE: CREATE REQUEST (Staff/Manager) -->
@@ -236,7 +276,10 @@
                              <span class="text-muted small d-block">Masuk sebagai:</span>
                              <strong>{{ sim_identity.name }}</strong> <span class="badge bg-secondary">{{ sim_identity.role }}</span>
                          </div>
-                         <a href="{% url 'users:check_request' %}" class="btn btn-sm btn-outline-secondary">Ganti Pengguna</a>
+                         <form method="POST" action="{% url 'users:check_request' %}" style="display:inline;">
+                             {% csrf_token %}
+                             <button type="submit" name="switch_user" value="true" class="btn btn-sm btn-outline-secondary">Ganti Pengguna</button>
+                         </form>
                      </div>
                      
                      <form method="POST" action="{% url 'users:check_request' %}">
@@ -311,67 +354,78 @@
                     
                     {% elif sim_stage == 'submitted_wait' %}
                     <!-- STAGE: SUBMITTED WAIT (Staff/Manager waiting for approval) -->
-                    <div class="text-center py-5">
-                        <div class="display-1 text-warning mb-3"><i class="bi bi-clock-history"></i></div>
-                        <h2 class="fw-bold text-dark">Permintaan Terkirim!</h2>
-                        <p class="lead text-muted">Permintaan Anda sekarang sedang <strong>Menunggu Persetujuan</strong>.</p>
-                        
-                        <div class="card shadow-sm mx-auto mt-4 text-start" style="max-width: 400px;">
-                            <div class="card-body">
-                                <h6 class="fw-bold">{{ p_result.title }} <span class="badge bg-warning text-dark">PENDING</span></h6>
-                                <p class="small text-muted mb-0">Diajukan oleh: {{ p_result.submitted_by }}</p>
-                            </div>
-                        </div>
-                        
-                         <div class="mt-5">
-                             <a href="{% url 'users:check_request' %}" class="btn btn-primary rounded-pill px-4">
-                                 <i class="bi bi-arrow-repeat me-1"></i> Mulai Simulasi Baru
-                             </a>
-                         </div>
-                    </div>
-
-
-                    {% elif sim_stage == 'completed' %}
-                    <!-- STAGE: RESULT (Of Approval) -->
                     <div class="text-center py-4">
-                        {% if p_result.status == 'DISETUJUI' %}
-                            <div class="display-1 text-success mb-3"><i class="bi bi-check-circle-fill"></i></div>
-                            <h2 class="text-success fw-bold">Permintaan Disetujui!</h2>
-                            <p class="text-muted">Permintaan telah berhasil diproses dan disetujui.</p>
-                        {% else %}
-                             <div class="display-1 text-danger mb-3"><i class="bi bi-x-circle-fill"></i></div>
-                            <h2 class="text-danger fw-bold">Permintaan Ditolak</h2>
-                            <p class="text-muted">Maaf, permintaan Anda telah ditolak oleh atasan.</p>
-                        {% endif %}
+                        <div class="display-1 text-primary mb-3"><i class="bi bi-clock-history"></i></div>
+                        <h2 class="fw-bold text-dark">Permintaan Terkirim!</h2>
+                        <p class="lead text-muted">Permintaan Anda telah masuk ke dalam antrian sistem.</p>
                         
-                         <div class="bg-light p-4 rounded text-start mx-auto mt-4" style="max-width: 400px;">
-                             <div class="d-flex justify-content-between mb-2">
-                                 <span class="text-muted">Permintaan:</span>
-                                 <span class="fw-bold">{{ p_result.title }}</span>
-                             </div>
-                             {% if p_result.amount %}
-                             <div class="d-flex justify-content-between mb-2">
-                                 <span class="text-muted">Jumlah:</span>
-                                 <span class="fw-bold">Rp {{ p_result.amount|intcomma }}</span>
-                             </div>
+                         <div class="mt-4 text-start">
+                             <h6 class="fw-bold mb-3 border-bottom pb-2">Status Antrian Permintaan Anda</h6>
+                             {% if not sim_elements %}
+                                <p class="text-muted small">Belum ada permintaan yang diajukan.</p>
                              {% endif %}
-                              <div class="d-flex justify-content-between mb-2">
-                                 <span class="text-muted">Diajukan Oleh:</span>
-                                 <span>{{ p_result.submitted_by }}</span>
-                             </div>
-                             <hr>
-                             <div class="mb-2">
-                                 <span class="text-muted small d-block">Komentar Penyetuju:</span>
-                                 <span class="fst-italic">"{{ p_result.manager_comment }}"</span>
-                             </div>
+
+                             {% for req in sim_elements %}
+                                 <div class="card mb-2 border-start border-4 {% if req.status == 'DISETUJUI' or req.manager_status == 'APPROVED' %}border-success{% elif req.status == 'DITOLAK' or req.manager_status == 'REJECTED' %}border-danger{% else %}border-warning{% endif %}">
+                                     <div class="card-body py-2">
+                                         <div class="d-flex justify-content-between align-items-center">
+                                             <div>
+                                                 <span class="fw-bold d-block">{{ req.title }}</span>
+                                                  <small class="text-muted">{{ req.submitted_at }}</small>
+                                             </div>
+                                             <span class="badge {% if req.status == 'DISETUJUI' or req.manager_status == 'APPROVED' %}bg-success{% elif req.status == 'DITOLAK' or req.manager_status == 'REJECTED' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                                 {% if req.status == 'DISETUJUI' or req.manager_status == 'APPROVED' %}DISETUJUI{% elif req.status == 'DITOLAK' or req.manager_status == 'REJECTED' %}DITOLAK{% else %}PENDING{% endif %}
+                                             </span>
+                                         </div>
+                                         {% if req.manager_comment %}
+                                         <div class="small text-muted mt-1 fst-italic border-top pt-1">
+                                             "{{ req.manager_comment }}"
+                                         </div>
+                                         {% endif %}
+                                     </div>
+                                 </div>
+                             {% endfor %}
                          </div>
-                         
-                         <div class="mt-4">
-                             <a href="{% url 'users:check_request' %}" class="btn btn-outline-primary rounded-pill">
-                                 <i class="bi bi-arrow-repeat me-1"></i> Mulai Simulasi Baru
-                             </a>
+                        
+                         <div class="mt-5 d-flex justify-content-center gap-2">
+                             <form method="POST" action="{% url 'users:check_request' %}">
+                                 {% csrf_token %}
+                                 <button type="submit" name="switch_user" value="true" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                     <i class="bi bi-box-arrow-right me-1"></i> Logout / Ganti Peran
+                                 </button>
+                             </form>
+
+                             <form method="POST" action="{% url 'users:check_request' %}">
+                                 {% csrf_token %}
+                                 <button type="submit" name="reset_sim" value="true" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                     <i class="bi bi-trash me-1"></i> Reset Data
+                                 </button>
+                             </form>
+                             
+                             <form method="POST" action="{% url 'users:check_request' %}">
+                                 {% csrf_token %}
+                                 <button type="submit" name="manager_action" value="true" class="btn btn-primary btn-sm rounded-pill px-4">
+                                     <input type="hidden" name="manager_choice" value="create">
+                                      <input type="hidden" name="sim_name" value="{{ sim_identity.name }}">
+                                      <input type="hidden" name="sim_role" value="{{ sim_identity.role }}">
+                                     <i class="bi bi-plus-circle me-1"></i> Buat Baru
+                                 </button>
+                             </form>
                          </div>
                     </div>
+                    {% else %}
+                    <!-- FALLBACK: UNKNOWN STATE / RESET -->
+                     <div class="text-center py-5">
+                          <h4 class="text-muted mb-3">Status Simulasi Tidak Valid</h4>
+                          <p class="text-muted mb-4">Sepertinya sesi Anda memiliki status yang sudah tidak berlaku.</p>
+                          
+                          <form method="POST" action="{% url 'users:check_request' %}">
+                              {% csrf_token %}
+                               <button type="submit" name="reset_sim" value="true" class="btn btn-warning rounded-pill px-4">
+                                   <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Simulasi
+                               </button>
+                          </form>
+                     </div>
                     {% endif %}
 
                 </div>
